@@ -20,6 +20,7 @@
 		B542E0F21ED5716400AD705C /* HomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B542E0EF1ED5716400AD705C /* HomeViewController.swift */; };
 		B542E0F31ED5716400AD705C /* MainCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B542E0F01ED5716400AD705C /* MainCollectionController.swift */; };
 		B542E0F41ED5716400AD705C /* MainTabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B542E0F11ED5716400AD705C /* MainTabViewController.swift */; };
+		B542E0F71ED57B7A00AD705C /* VideoControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = B542E0F61ED57B7A00AD705C /* VideoControl.swift */; };
 		B580975B1ECE8A02008F7E82 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B580975A1ECE8A02008F7E82 /* AppDelegate.swift */; };
 		B58097601ECE8A02008F7E82 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B580975E1ECE8A02008F7E82 /* Main.storyboard */; };
 		B58097621ECE8A02008F7E82 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B58097611ECE8A02008F7E82 /* Assets.xcassets */; };
@@ -40,6 +41,7 @@
 		B542E0EF1ED5716400AD705C /* HomeViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HomeViewController.swift; path = Views/Controllers/HomeViewController.swift; sourceTree = "<group>"; };
 		B542E0F01ED5716400AD705C /* MainCollectionController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MainCollectionController.swift; path = Views/Controllers/MainCollectionController.swift; sourceTree = "<group>"; };
 		B542E0F11ED5716400AD705C /* MainTabViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = MainTabViewController.swift; path = Views/Controllers/MainTabViewController.swift; sourceTree = "<group>"; };
+		B542E0F61ED57B7A00AD705C /* VideoControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = VideoControl.swift; path = Views/VideoControl.swift; sourceTree = "<group>"; };
 		B58097571ECE8A02008F7E82 /* YoutubeLike.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = YoutubeLike.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B580975A1ECE8A02008F7E82 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B580975F1ECE8A02008F7E82 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
@@ -66,6 +68,7 @@
 				B542E0E41ED570E900AD705C /* MenuBar.swift */,
 				B542E0E51ED570E900AD705C /* VideoLauncher.swift */,
 				B51BD10D1ED48B4600671B2D /* cells */,
+				B542E0F61ED57B7A00AD705C /* VideoControl.swift */,
 			);
 			name = views;
 			sourceTree = "<group>";
@@ -239,6 +242,7 @@
 				B542E0E31ED570E100AD705C /* VideoCell.swift in Sources */,
 				B542E0F31ED5716400AD705C /* MainCollectionController.swift in Sources */,
 				B542E0E91ED5710E00AD705C /* ApiService.swift in Sources */,
+				B542E0F71ED57B7A00AD705C /* VideoControl.swift in Sources */,
 				B542E0E61ED570E900AD705C /* MenuBar.swift in Sources */,
 				B542E0ED1ED5712900AD705C /* Extensions.swift in Sources */,
 				B542E0DF1ED570E100AD705C /* FeedCell.swift in Sources */,
