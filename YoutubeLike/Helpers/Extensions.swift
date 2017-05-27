@@ -6,6 +6,19 @@ extension UIApplication {
     }
 }
 
+extension UIViewController {
+    var rootController: RootController?  {
+        var parentResponder: UIResponder? = self
+        while parentResponder != nil {
+            parentResponder = parentResponder!.next
+            if let result = parentResponder as? RootController {
+                return result
+            }
+        }
+        return nil
+    }
+}
+
 extension UIView {
     func addConstraints(withFormat: String, views: UIView...) {
         

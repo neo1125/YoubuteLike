@@ -63,7 +63,6 @@ class MainTabViewController: UITabBarController {
         
         guard let navigationBar = navigationController?.navigationBar else {
             return
-            
         }
         navigationBar.isTranslucent = false
         let titleLabel = UILabel(frame: navigationBar.bounds)
@@ -74,9 +73,10 @@ class MainTabViewController: UITabBarController {
     }
     
     private func prepareNavigationItem() {
-        let searchButtonItem = UIBarButtonItem(barButtonSystemItem: .search, target: self, action: #selector(handleSearch))
+        
+        let searchButtonItem = UIBarButtonItem(image: UIImage(named: "search"), style: .plain, target: self, action: #selector(handleSearch))
         searchButtonItem.tintColor = UIColor.white
-        let cameraButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(handleCamera))
+        let cameraButtonItem = UIBarButtonItem(image: UIImage(named: "video"), style: .plain, target: self, action: #selector(handleCamera))
         cameraButtonItem.tintColor = UIColor.white
         
         let label = UILabel(frame: CGRect(x: 0, y: 0, width: 25, height: 25))
