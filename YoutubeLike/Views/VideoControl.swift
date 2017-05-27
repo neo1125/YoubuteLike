@@ -1,6 +1,12 @@
 import UIKit
 import AVFoundation
 
+protocol VideoControlDelegate {
+    func play()
+    func pause()
+    func seek(point: Double)
+}
+
 class VideoControl: UIView {
     
     let activityIndicatorView: UIActivityIndicatorView = {
@@ -12,7 +18,7 @@ class VideoControl: UIView {
     
     let pausePlayButton: UIButton = {
         let button = UIButton(type: UIButtonType.system)
-        let image = UIImage(named: "pause")
+        let image = UIImage(named: "play")
         button.setImage(image, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.tintColor = UIColor.white
@@ -58,7 +64,36 @@ class VideoControl: UIView {
         return button
     }()
     
+    var isReady = false {
+        didSet {
+            if isReady {
+                activityIndicatorView.stopAnimating()
+                pausePlayButton.isHidden = false
+                if isAutoPlay {
+                    handlePausePlay()
+                }
+            }
+        }
+    }
+    var isAutoPlay = false
     var isPlaying = false
+    var delegate: VideoControlDelegate?
+    var layoutDelegate: VideoPalyerLayoutDelegate?
+    var duration: Double = 0 {
+        didSet {
+            let secondsText = String(format: "%02d", Int(duration) % 60)
+            let minutesText = String(format: "%02d", Int(duration) / 60)
+            currentTimeLabel.text = "\(minutesText):\(secondsText)"
+            videoSlider.value = Float(duration / totalDuration)
+        }
+    }
+    var totalDuration: Double = 0 {
+        didSet {
+            let minutesText = String(format: "%02d", Int(totalDuration) / 60)
+            let secondsText = Int(totalDuration) % 60
+            videoLengthLabel.text = "\(minutesText):\(secondsText)"
+        }
+    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -71,7 +106,23 @@ class VideoControl: UIView {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        print("####### touch end ####")
+        if isReady {
+            UIView.animate(withDuration: 0.35) {
+                self.alpha = (self.alpha <= 0) ? 1 : 0
+            }
+        }
+    }
+    
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        if self.point(inside: point, with: event) {
+            for subview in self.subviews.enumerated().reversed() {
+                let convertPoint = subview.element.convert(point, from: self)
+                if let hitTestView = subview.element.hitTest(convertPoint, with: event) {
+                    return hitTestView
+                }
+            }
+        }
+        return self
     }
     
     private func setupGradientLayer() {
@@ -114,7 +165,8 @@ class VideoControl: UIView {
         videoSlider.heightAnchor.constraint(equalToConstant: 30).isActive = true
         
         addSubview(expandButton)
-        expandButton.topAnchor.constraint(equalTo: topAnchor, constant: 10).isActive = true
+        expandButton.leftAnchor.constraint(equalTo: leftAnchor, constant: 0).isActive = true
+        expandButton.topAnchor.constraint(equalTo: topAnchor, constant: 8).isActive = true
         expandButton.widthAnchor.constraint(equalToConstant: 44).isActive = true
         expandButton.heightAnchor.constraint(equalToConstant: 44).isActive = true
         expandButton.addTarget(self, action: #selector(handleExpand), for: .touchUpInside)
@@ -122,28 +174,26 @@ class VideoControl: UIView {
     
     func handlePausePlay() {
         if isPlaying {
-            //player?.pause()
-            pausePlayButton.setImage(UIImage(named: "play"), for: .normal)
+            delegate?.pause()
+            UIView.animate(withDuration: 0.2, animations: { 
+                self.pausePlayButton.setImage(UIImage(named: "play"), for: .normal)
+            })
+            
         } else {
-            //player?.play()
-            pausePlayButton.setImage(UIImage(named: "pause"), for: .normal)
+            delegate?.play()
+            UIView.animate(withDuration: 0.2, animations: {
+                self.pausePlayButton.setImage(UIImage(named: "pause"), for: .normal)
+            })
         }
-        
         isPlaying = !isPlaying
     }
     
     func handleSliderChange() {
-//        guard let duration: CMTime = player?.currentItem?.duration, let totalSeconds: Double = CMTimeGetSeconds(duration) else {
-//            return
-//        }
-//        let value = Double(videoSlider.value) * totalSeconds
-//        let seekTime = CMTime(value: Int64(value), timescale: 1)
-//        player?.seek(to: seekTime, completionHandler: { (completed) in
-//            
-//        })
+        delegate?.seek(point: Double(videoSlider.value))
     }
     
     func handleExpand() {
-        
+        isHidden = true
+        layoutDelegate?.minimize()
     }
 }

@@ -1,11 +1,20 @@
 import UIKit
 
-class HomeViewController: UICollectionViewController {
+class DetailViewController: UICollectionViewController {
     
     var videos: [Video]?
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("####### DetailViewController viewDidLoad ###")
+        view.clipsToBounds = true
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        print("####### DetailViewController viewWillAppear ###")
         
         prepareCollectionView()
         fetchVideos()
@@ -25,8 +34,11 @@ class HomeViewController: UICollectionViewController {
     }
     
     private func fetchVideos() {
-        ApiService.shared.fetchVideos { videos in
+        ApiService.shared.fetchTrendings { videos in
+            print("### fetchTrendings : ", videos)
             self.videos = videos
+            
+            print("### collectionView : ", self.collectionView)
             self.collectionView?.reloadData()
         }
     }
@@ -36,33 +48,19 @@ class HomeViewController: UICollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        print("### numberOfItemsInSection")
         return videos?.count ?? 0
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        print("### cellForItemAt")
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "cellId", for: indexPath) as! VideoCell
         cell.video = videos?[indexPath.row]
         return cell
     }
-    
-    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-//        print("### videoLauncher 1")
-//        let videoLauncher = VideoLauncher()
-//        print("### videoLauncher 2")
-////        Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { (timer) in
-//            videoLauncher.show()
-////        }
-//        print("### videoLauncher 3")
-        
-        guard let rootController = self.rootController else {
-            return
-        }
-    
-        rootController.showPlayerView()
-    }
 }
 
-extension HomeViewController: UICollectionViewDelegateFlowLayout {
+extension DetailViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let height = (view.frame.width - (16*2)) * (9/16)
         return CGSize(width: view.bounds.width, height: height + 16 + 68)
@@ -71,5 +69,5 @@ extension HomeViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
         return 0
     }
+    
 }
-
