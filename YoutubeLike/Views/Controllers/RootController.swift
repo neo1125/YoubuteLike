@@ -32,8 +32,7 @@ open class RootController: UIViewController {
     }()
     
     let playerAnimationDuration: Double = 0.3
-    var palyerLayoutType: Int = 0
-    var dragBeganPoint: CGPoint = .zero
+    var originTransform: CGAffineTransform?
     var videos: [Video] = []
     
     public required init?(coder aDecoder: NSCoder) {
@@ -106,6 +105,7 @@ extension RootController {
         
         let gesture = UIPanGestureRecognizer(target: self, action: #selector(handleSwipe(sender:)))
         launchView.addGestureRecognizer(gesture)
+        originTransform = launchView.transform
     }
     
     private func showAnimation() {
@@ -128,42 +128,38 @@ extension RootController {
     
     func setMinimize() {
         UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
-            
-            let minimScale: CGFloat = 0.6
             self.dimView.alpha = 0
             self.collectionView.alpha = 0
-            let scale = CGAffineTransform(scaleX: minimScale, y: minimScale)
-            let tran = CGAffineTransform(translationX: 75, y: 357)
-            self.launchView.transform = scale.concatenating(tran)
+            self.videoPlayerView.controlContainerView.alpha = 0
+            self.launchView.transform.a = 0.6
+            self.launchView.transform.d = 0.6
+            self.launchView.transform.tx = 75
+            self.launchView.transform.ty = 357
             
             if let statusbar = UIApplication.shared.statusBarView {
                 statusbar.alpha = 1
             }
-            
         }) { ending in
             self.dimView.isHidden = true
-            self.palyerLayoutType = 1
+            self.videoPlayerView.controlContainerView.isHidden = true
         }
     }
     
     func setMaximize() {
-        //if palyerLayoutType == 1 {
-            print("##### full")
-            self.dimView.isHidden = false
-            UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
-                self.dimView.alpha = 1
-                self.collectionView.alpha = 1
-                let scale = CGAffineTransform(scaleX: 1, y: 1)
-                let translation = CGAffineTransform(translationX: 0, y: 0)
-                self.launchView.transform = scale.concatenating(translation)
-                
-                if let statusbar = UIApplication.shared.statusBarView {
-                    statusbar.alpha = 0
-                }
-            }) { ending in
-                self.palyerLayoutType = 0
+        self.dimView.isHidden = false
+        self.videoPlayerView.controlContainerView.isHidden = false
+        UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
+            self.dimView.alpha = 1
+            self.collectionView.alpha = 1
+            self.videoPlayerView.controlContainerView.alpha = 1
+            self.launchView.transform.a = 1
+            self.launchView.transform.d = 1
+            self.launchView.transform.tx = 0
+            self.launchView.transform.ty = 0
+            if let statusbar = UIApplication.shared.statusBarView {
+                statusbar.alpha = 0
             }
-        //}
+        })
     }
     
     func handleSwipe(sender: UIPanGestureRecognizer) {
@@ -171,13 +167,15 @@ extension RootController {
         let point = sender.translation(in: nil)
         let velocity = sender.velocity(in: nil)
         
-        if sender.state == .ended && (abs(velocity.x) < abs(velocity.y)) {
+        if sender.state == .ended {
             let scale = UIScreen.main.bounds.height / point.y
-            if abs(velocity.y) > 100 || scale < 6 {
-                setMinimize()
-            } else {
-                setMaximize()
+            guard (abs(velocity.x) < abs(velocity.y)) && (abs(velocity.y) > 100 || scale < 6) else {
+                self.setMaximize()
+                return
             }
+            
+            self.setMinimize()
+            return
         }
         
         if point.y >= 0 {

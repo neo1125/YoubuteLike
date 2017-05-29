@@ -9,6 +9,7 @@ protocol VideoPalyerLayoutDelegate {
 class VideoPlayerView: UIView {
     
     var player: AVPlayer?
+    var playerLayer: AVPlayerLayer?
     var delegate: VideoPalyerLayoutDelegate? {
         didSet {
             controlContainerView.layoutDelegate = delegate
@@ -19,8 +20,6 @@ class VideoPlayerView: UIView {
         control.backgroundColor = UIColor(white: 0, alpha: 0.5)
         return control
     }()
-    
-    var playerLayer: AVPlayerLayer?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -99,19 +98,5 @@ extension VideoPlayerView: VideoControlDelegate {
         let value = point * totalSeconds
         let seekTime = CMTime(value: Int64(value), timescale: 1)
         player?.seek(to: seekTime)
-    }
-}
-
-extension VideoPlayerView: VideoPalyerLayoutDelegate {
-    func minimize() {
-        if let pLayer = playerLayer {
-            pLayer.frame = CGRect(x: 175.0, y: 510.0, width: 200.0, height: 112.5)
-        }
-    }
-    
-    func maximize() {
-//        if let pLayer = playerLayer {
-//            pLayer.frame = CGRect(x: 0, y: 0, width: <#T##CGFloat#>, height: <#T##CGFloat#>)
-//        }
     }
 }

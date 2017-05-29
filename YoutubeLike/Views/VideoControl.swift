@@ -9,6 +9,46 @@ protocol VideoControlDelegate {
 
 class VideoControl: UIView {
     
+    var isAutoPlay = false
+    var isPlaying = false
+    var delegate: VideoControlDelegate?
+    var layoutDelegate: VideoPalyerLayoutDelegate?
+    
+    override var isHidden: Bool {
+        didSet {
+            self.pausePlayButton.isEnabled = !isHidden
+        }
+    }
+    
+    var duration: Double = 0 {
+        didSet {
+            let secondsText = String(format: "%02d", Int(duration) % 60)
+            let minutesText = String(format: "%02d", Int(duration) / 60)
+            currentTimeLabel.text = "\(minutesText):\(secondsText)"
+            videoSlider.value = Float(duration / totalDuration)
+        }
+    }
+    
+    var totalDuration: Double = 0 {
+        didSet {
+            let minutesText = String(format: "%02d", Int(totalDuration) / 60)
+            let secondsText = Int(totalDuration) % 60
+            videoLengthLabel.text = "\(minutesText):\(secondsText)"
+        }
+    }
+    
+    var isReady = false {
+        didSet {
+            if isReady {
+                activityIndicatorView.stopAnimating()
+                pausePlayButton.isHidden = false
+                if isAutoPlay {
+                    handlePausePlay()
+                }
+            }
+        }
+    }
+    
     let activityIndicatorView: UIActivityIndicatorView = {
         let aiv = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.whiteLarge)
         aiv.translatesAutoresizingMaskIntoConstraints = false
@@ -63,37 +103,6 @@ class VideoControl: UIView {
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
-    
-    var isReady = false {
-        didSet {
-            if isReady {
-                activityIndicatorView.stopAnimating()
-                pausePlayButton.isHidden = false
-                if isAutoPlay {
-                    handlePausePlay()
-                }
-            }
-        }
-    }
-    var isAutoPlay = false
-    var isPlaying = false
-    var delegate: VideoControlDelegate?
-    var layoutDelegate: VideoPalyerLayoutDelegate?
-    var duration: Double = 0 {
-        didSet {
-            let secondsText = String(format: "%02d", Int(duration) % 60)
-            let minutesText = String(format: "%02d", Int(duration) / 60)
-            currentTimeLabel.text = "\(minutesText):\(secondsText)"
-            videoSlider.value = Float(duration / totalDuration)
-        }
-    }
-    var totalDuration: Double = 0 {
-        didSet {
-            let minutesText = String(format: "%02d", Int(totalDuration) / 60)
-            let secondsText = Int(totalDuration) % 60
-            videoLengthLabel.text = "\(minutesText):\(secondsText)"
-        }
-    }
     
     override init(frame: CGRect) {
         super.init(frame: frame)
