@@ -21,27 +21,15 @@ open class RootController: UIViewController {
         return view
     }()
     
-    fileprivate let launchView: UIView = {
+    fileprivate var launchView: UIView! = {
         let view = UIView()
         view.backgroundColor = UIColor.clear
         view.clipsToBounds = true
         return view
     }()
     
-    fileprivate lazy var videoPlayerView: VideoPlayerView = {
-        let player = VideoPlayerView()
-        player.delegate = self
-        return player
-    }()
-    
-    fileprivate lazy var collectionView: UICollectionView = {
-        let cv = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
-        cv.dataSource = self
-        cv.delegate = self
-        cv.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
-        cv.backgroundColor = UIColor.white
-        return cv
-    }()
+    fileprivate var videoPlayerView: VideoPlayerView?
+    fileprivate var collectionView: UICollectionView?
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -96,13 +84,27 @@ extension RootController {
     private func setupPlayerView() {
         
         dimView.isHidden = false
+        
+        launchView = UIView(frame: view.frame)
+        launchView.backgroundColor = UIColor.clear
+        launchView.clipsToBounds = true
         launchView.frame = view.frame
-        launchView.addSubview(videoPlayerView)
-        launchView.addSubview(collectionView)
+        
+        videoPlayerView = VideoPlayerView()
+        videoPlayerView?.delegate = self
+        
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
+        collectionView?.dataSource = self
+        collectionView?.delegate = self
+        collectionView?.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
+        collectionView?.backgroundColor = UIColor.white
+        
+        launchView.addSubview(videoPlayerView!)
+        launchView.addSubview(collectionView!)
 
         let playerHeight = launchView.frame.width * 9 / 16
-        videoPlayerView.frame = CGRect(x: 0, y: 0, width: launchView.frame.width, height: playerHeight)
-        collectionView.frame = CGRect(x: 0, y: playerHeight, width: launchView.frame.width, height: launchView.frame.height - playerHeight)
+        videoPlayerView?.frame = CGRect(x: 0, y: 0, width: launchView.frame.width, height: playerHeight)
+        collectionView?.frame = CGRect(x: 0, y: playerHeight, width: launchView.frame.width, height: launchView.frame.height - playerHeight)
         view.addSubview(launchView)
         
         let miniWidth: CGFloat = 200
@@ -128,15 +130,15 @@ extension RootController {
     private func fetchVideos() {
         ApiService.shared.fetchSubscriptions { videos in
             self.videos = videos
-            self.collectionView.reloadData()
+            self.collectionView?.reloadData()
         }
     }
     
     func setMinimize() {
         UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
             self.dimView.alpha = 0
-            self.collectionView.alpha = 0
-            self.videoPlayerView.controlContainerView.isHidden = true
+            self.collectionView?.alpha = 0
+            self.videoPlayerView?.controlContainerView.isHidden = true
             self.launchView.transform.a = 0.6
             self.launchView.transform.d = 0.6
             self.launchView.transform.tx = 75
@@ -155,8 +157,8 @@ extension RootController {
         
         UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
             self.dimView.alpha = 1
-            self.collectionView.alpha = 1
-            self.videoPlayerView.controlContainerView.isHidden = false
+            self.collectionView?.alpha = 1
+            self.videoPlayerView?.controlContainerView.isHidden = false
             self.launchView.transform.a = 1
             self.launchView.transform.d = 1
             self.launchView.transform.tx = 0
@@ -165,6 +167,14 @@ extension RootController {
                 statusbar.alpha = 0
             }
         })
+    }
+    
+    func removeVideoPlayer() {
+        dimView.alpha = 0
+        launchView.removeFromSuperview()
+        if let statusbar = UIApplication.shared.statusBarView {
+            statusbar.alpha = 1
+        }
     }
     
     func handlePanGesture(gesture: UIPanGestureRecognizer) {
@@ -182,6 +192,9 @@ extension RootController {
             } else {
                 // left or right
                 direction = velocity.x > 0 ? .right : .left
+                if direction == .left && launchView.transform.a == 1 {
+                    direction = .none
+                }
             }
         }
         
@@ -196,6 +209,9 @@ extension RootController {
                 return
             } else if direction == .up && (abs(velocity.y) > 100 || scale > 6) {
                 self.setMaximize()
+                return
+            } else if direction == .left {
+                self.removeVideoPlayer()
                 return
             } else {
                 if direction == .down {
@@ -229,7 +245,7 @@ extension RootController {
             let transform = scale.concatenating(translation)
             launchView.transform = transform
             dimView.alpha = 1 - (factor * 4)
-            collectionView.alpha = 1 - (factor * 4)
+            collectionView?.alpha = 1 - (factor * 4)
             
             if let statusbar = UIApplication.shared.statusBarView {
                 statusbar.alpha = (factor * 6) - 1
@@ -255,11 +271,15 @@ extension RootController {
             let transform = scale.concatenating(translation)
             launchView.transform = transform
             dimView.alpha = (factor * 4) - 1
-            collectionView.alpha = (factor * 4) - 1
+            collectionView?.alpha = (factor * 4) - 1
             
             if let statusbar = UIApplication.shared.statusBarView {
                 statusbar.alpha = 1 - (factor * 6)
             }
+        } else if direction == .left && abs(point.x) >= 0 {
+            let factor = (abs(point.x) / UIScreen.main.bounds.width)
+            launchView.alpha = 1 - (factor * 10)
+            launchView.transform.tx = launchView.transform.tx + (point.x / 10)
         }
     }
 }
