@@ -11,7 +11,8 @@ open class RootController: UIViewController {
     
     let launchView: UIView = {
         let view = UIView()
-        view.backgroundColor = UIColor.white
+        view.backgroundColor = UIColor.clear
+        view.clipsToBounds = true
         return view
     }()
     
@@ -26,7 +27,7 @@ open class RootController: UIViewController {
         cv.dataSource = self
         cv.delegate = self
         cv.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
-        cv.backgroundColor = UIColor.clear
+        cv.backgroundColor = UIColor.white
         return cv
     }()
     
@@ -52,42 +53,6 @@ open class RootController: UIViewController {
         view.contentScaleFactor = UIScreen.main.scale
         prepareRootViewController()
     }
-    
-//    open override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let touch = touches.first else {
-//            return
-//        }
-//        
-//        dragBeganPoint = touch.location(in: self.view)
-//    }
-//    
-//    open override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let touch = touches.first else {
-//            return
-//        }
-//        
-//        let frame = launchView.frame
-//        let movePoint = touch.location(in: self.view)
-//        let factor = dragBeganPoint.y / movePoint.y
-//        
-//        print("### factor : ", factor)
-//        
-//        let width = frame.width * factor
-//        let height = width * CGFloat(9 / 16)
-//        
-//        
-//        self.launchView.frame = CGRect(x: 30, y: 30, width: 30, height: 30)
-//        
-////        dimView.alpha = 1 - factor
-////        collectionView.alpha = 1 - factor
-////        let scale = CGAffineTransform.init(scaleX: (1 - 0.5 * factor), y: (1 - 0.5 * factor))
-////        let trasform = scale.concatenating(CGAffineTransform.init(translationX: (frame.width / 4 * factor), y: (frame.height / 4 * factor)))
-////        launchView.transform = trasform
-//    }
-//    
-//    open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        //print("######## touchesEnded : ", event)
-//    }
 }
 
 extension RootController {
@@ -137,6 +102,10 @@ extension RootController {
         let miniWidth: CGFloat = 200
         let miniHeight: CGFloat = miniWidth * 9 / 16
         launchView.frame = CGRect(x: view.frame.width - miniWidth, y: view.frame.height - (miniHeight + 44), width: miniWidth, height: miniHeight)
+        
+        
+        let gesture = UIPanGestureRecognizer(target: self, action: #selector(handleSwipe(sender:)))
+        launchView.addGestureRecognizer(gesture)
     }
     
     private func showAnimation() {
@@ -154,6 +123,91 @@ extension RootController {
         ApiService.shared.fetchSubscriptions { videos in
             self.videos = videos
             self.collectionView.reloadData()
+        }
+    }
+    
+    func setMinimize() {
+        UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
+            
+            let minimScale: CGFloat = 0.6
+            self.dimView.alpha = 0
+            self.collectionView.alpha = 0
+            let scale = CGAffineTransform(scaleX: minimScale, y: minimScale)
+            let tran = CGAffineTransform(translationX: 75, y: 357)
+            self.launchView.transform = scale.concatenating(tran)
+            
+            if let statusbar = UIApplication.shared.statusBarView {
+                statusbar.alpha = 1
+            }
+            
+        }) { ending in
+            self.dimView.isHidden = true
+            self.palyerLayoutType = 1
+        }
+    }
+    
+    func setMaximize() {
+        //if palyerLayoutType == 1 {
+            print("##### full")
+            self.dimView.isHidden = false
+            UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
+                self.dimView.alpha = 1
+                self.collectionView.alpha = 1
+                let scale = CGAffineTransform(scaleX: 1, y: 1)
+                let translation = CGAffineTransform(translationX: 0, y: 0)
+                self.launchView.transform = scale.concatenating(translation)
+                
+                if let statusbar = UIApplication.shared.statusBarView {
+                    statusbar.alpha = 0
+                }
+            }) { ending in
+                self.palyerLayoutType = 0
+            }
+        //}
+    }
+    
+    func handleSwipe(sender: UIPanGestureRecognizer) {
+     
+        let point = sender.translation(in: nil)
+        let velocity = sender.velocity(in: nil)
+        
+        if sender.state == .ended && (abs(velocity.x) < abs(velocity.y)) {
+            let scale = UIScreen.main.bounds.height / point.y
+            if abs(velocity.y) > 100 || scale < 6 {
+                setMinimize()
+            } else {
+                setMaximize()
+            }
+        }
+        
+        if point.y >= 0 {
+            let factor = (abs(sender.translation(in: nil).y) / UIScreen.main.bounds.height)
+            var scaleFactor = 1 - factor
+            if scaleFactor < 0.7 {
+                scaleFactor = 0.7
+            }
+            let scale = CGAffineTransform(scaleX: scaleFactor, y: scaleFactor)
+            
+            var translationX = (launchView.bounds.width * factor)-1
+            var translationY = (launchView.bounds.width * factor)-1
+            if translationX > 30 {
+                translationX = 30
+            }
+            
+            if translationY / translationX > 1.6 {
+                translationY = 50
+            }
+            
+            
+            let translation = CGAffineTransform(translationX: translationX, y: (launchView.bounds.height * factor)-1)
+            let transform = scale.concatenating(translation)
+            launchView.transform = transform
+            dimView.alpha = 1 - (factor * 4)
+            collectionView.alpha = 1 - (factor * 4)
+            
+            if let statusbar = UIApplication.shared.statusBarView {
+                statusbar.alpha = (factor * 6) - 1
+            }
         }
     }
 }
@@ -182,39 +236,10 @@ extension RootController: UICollectionViewDelegateFlowLayout {
 
 extension RootController: VideoPalyerLayoutDelegate {
     func minimize() {
-        print("#########")
-        UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
-            let miniWidth: CGFloat = 200
-            let miniHeight: CGFloat = miniWidth * 9 / 16
-            self.dimView.alpha = 0
-            self.collectionView.alpha = 0
-            self.launchView.frame = CGRect(x: self.view.frame.width - miniWidth, y: self.view.frame.height - (miniHeight + 44), width: miniWidth, height: miniHeight)
-            
-            if let statusbar = UIApplication.shared.statusBarView {
-                statusbar.alpha = 1
-            }
-            
-        }) { ending in
-            self.dimView.isHidden = true
-            self.palyerLayoutType = 1
-            print("self.launchView.frame : ", self.launchView.frame)
-        }
+        setMinimize()
     }
     
     func maximize() {
-        if palyerLayoutType == 1 {
-            self.dimView.isHidden = false
-            UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
-                self.dimView.alpha = 1
-                self.collectionView.alpha = 1
-                self.launchView.frame = self.view.frame
-                
-                if let statusbar = UIApplication.shared.statusBarView {
-                    statusbar.alpha = 0
-                }
-            }) { ending in
-                self.palyerLayoutType = 0
-            }
-        }
+        setMaximize()
     }
 }
