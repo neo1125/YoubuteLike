@@ -1,28 +1,40 @@
 import UIKit
 
+enum Direction {
+    case up
+    case down
+    case left
+    case right
+    case none
+}
+
 open class RootController: UIViewController {
 
     fileprivate var rootViewController: UIViewController!
-    let dimView: UIView = {
+    fileprivate let playerAnimationDuration: Double = 0.3
+    fileprivate var videos: [Video] = []
+    fileprivate var direction = Direction.none
+    
+    fileprivate let dimView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor(white: 0, alpha: 1)
         return view
     }()
     
-    let launchView: UIView = {
+    fileprivate let launchView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor.clear
         view.clipsToBounds = true
         return view
     }()
     
-    lazy var videoPlayerView: VideoPlayerView = {
+    fileprivate lazy var videoPlayerView: VideoPlayerView = {
         let player = VideoPlayerView()
         player.delegate = self
         return player
     }()
     
-    lazy var collectionView: UICollectionView = {
+    fileprivate lazy var collectionView: UICollectionView = {
         let cv = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
         cv.dataSource = self
         cv.delegate = self
@@ -30,10 +42,6 @@ open class RootController: UIViewController {
         cv.backgroundColor = UIColor.white
         return cv
     }()
-    
-    let playerAnimationDuration: Double = 0.3
-    var originTransform: CGAffineTransform?
-    var videos: [Video] = []
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -88,7 +96,6 @@ extension RootController {
     private func setupPlayerView() {
         
         dimView.isHidden = false
-        
         launchView.frame = view.frame
         launchView.addSubview(videoPlayerView)
         launchView.addSubview(collectionView)
@@ -103,9 +110,8 @@ extension RootController {
         launchView.frame = CGRect(x: view.frame.width - miniWidth, y: view.frame.height - (miniHeight + 44), width: miniWidth, height: miniHeight)
         
         
-        let gesture = UIPanGestureRecognizer(target: self, action: #selector(handleSwipe(sender:)))
+        let gesture = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(gesture:)))
         launchView.addGestureRecognizer(gesture)
-        originTransform = launchView.transform
     }
     
     private func showAnimation() {
@@ -130,7 +136,7 @@ extension RootController {
         UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
             self.dimView.alpha = 0
             self.collectionView.alpha = 0
-            self.videoPlayerView.controlContainerView.alpha = 0
+            self.videoPlayerView.controlContainerView.isHidden = true
             self.launchView.transform.a = 0.6
             self.launchView.transform.d = 0.6
             self.launchView.transform.tx = 75
@@ -141,17 +147,16 @@ extension RootController {
             }
         }) { ending in
             self.dimView.isHidden = true
-            self.videoPlayerView.controlContainerView.isHidden = true
         }
     }
     
     func setMaximize() {
         self.dimView.isHidden = false
-        self.videoPlayerView.controlContainerView.isHidden = false
+        
         UIView.animate(withDuration: playerAnimationDuration, delay: 0, options: .curveEaseInOut, animations: {
             self.dimView.alpha = 1
             self.collectionView.alpha = 1
-            self.videoPlayerView.controlContainerView.alpha = 1
+            self.videoPlayerView.controlContainerView.isHidden = false
             self.launchView.transform.a = 1
             self.launchView.transform.d = 1
             self.launchView.transform.tx = 0
@@ -162,40 +167,63 @@ extension RootController {
         })
     }
     
-    func handleSwipe(sender: UIPanGestureRecognizer) {
+    func handlePanGesture(gesture: UIPanGestureRecognizer) {
      
-        let point = sender.translation(in: nil)
-        let velocity = sender.velocity(in: nil)
+        let point = gesture.translation(in: view)
+        let velocity = gesture.velocity(in: view)
         
-        if sender.state == .ended {
+        if gesture.state == .began {
+            if abs(velocity.x) < abs(velocity.y) {
+                // up or down
+                direction = velocity.y > 0 ? .down : .up
+                if direction == .down && launchView.transform.a == 0.6 {
+                    direction = .none
+                }
+            } else {
+                // left or right
+                direction = velocity.x > 0 ? .right : .left
+            }
+        }
+        
+        if gesture.state == .ended {
             let scale = UIScreen.main.bounds.height / point.y
-            guard (abs(velocity.x) < abs(velocity.y)) && (abs(velocity.y) > 100 || scale < 6) else {
-                self.setMaximize()
+            guard direction != .none else {
                 return
             }
             
-            self.setMinimize()
-            return
+            if direction == .down && (abs(velocity.y) > 100 || scale < 6) {
+                self.setMinimize()
+                return
+            } else if direction == .up && (abs(velocity.y) > 100 || scale > 6) {
+                self.setMaximize()
+                return
+            } else {
+                if direction == .down {
+                    self.setMaximize()
+                } else if direction == .up {
+                    self.setMinimize()
+                }
+                return
+            }
         }
         
-        if point.y >= 0 {
-            let factor = (abs(sender.translation(in: nil).y) / UIScreen.main.bounds.height)
+        if direction == .down && point.y >= 0 {
+            let factor = (abs(point.y) / UIScreen.main.bounds.height)
             var scaleFactor = 1 - factor
-            if scaleFactor < 0.7 {
-                scaleFactor = 0.7
+            if scaleFactor < 0.6 {
+                scaleFactor = 0.6
             }
             let scale = CGAffineTransform(scaleX: scaleFactor, y: scaleFactor)
             
-            var translationX = (launchView.bounds.width * factor)-1
-            var translationY = (launchView.bounds.width * factor)-1
-            if translationX > 30 {
-                translationX = 30
+            var translationX = launchView.bounds.width * factor
+            var translationY = launchView.bounds.height * factor
+            if translationX > 75 {
+                translationX = 75
             }
             
-            if translationY / translationX > 1.6 {
-                translationY = 50
+            if translationY > 357 {
+                translationY = 357
             }
-            
             
             let translation = CGAffineTransform(translationX: translationX, y: (launchView.bounds.height * factor)-1)
             let transform = scale.concatenating(translation)
@@ -205,6 +233,32 @@ extension RootController {
             
             if let statusbar = UIApplication.shared.statusBarView {
                 statusbar.alpha = (factor * 6) - 1
+            }
+        } else if direction == .up && abs(point.y) >= 0 {
+            let factor = (abs(point.y) / UIScreen.main.bounds.height)
+            var scaleFactor = factor + 0.6
+            if scaleFactor >= 1 {
+                scaleFactor = 1
+            }
+            
+            let scale = CGAffineTransform(scaleX: scaleFactor, y: scaleFactor)
+            var translationX = 75 - (launchView.bounds.width * factor)
+            var translationY = 357 - (launchView.bounds.width * factor)
+            if translationX <= 0 {
+               translationX = 0
+            }
+            if translationY <= 0 {
+                translationY = 0
+            }
+            
+            let translation = CGAffineTransform(translationX: translationX, y: translationY)
+            let transform = scale.concatenating(translation)
+            launchView.transform = transform
+            dimView.alpha = (factor * 4) - 1
+            collectionView.alpha = (factor * 4) - 1
+            
+            if let statusbar = UIApplication.shared.statusBarView {
+                statusbar.alpha = 1 - (factor * 6)
             }
         }
     }

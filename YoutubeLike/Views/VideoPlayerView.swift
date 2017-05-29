@@ -73,13 +73,13 @@ class VideoPlayerView: UIView {
         }
     }
     
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if controlContainerView.isHidden {
-            controlContainerView.isHidden = false
-        }
-        
-        delegate?.maximize()
-    }
+//    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+//        if controlContainerView.isHidden {
+//            controlContainerView.isHidden = false
+//        }
+//        
+//        delegate?.maximize()
+//    }
 }
 
 extension VideoPlayerView: VideoControlDelegate {
